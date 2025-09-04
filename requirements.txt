@@ -1,0 +1,15 @@
+# requirements.txt
+
+torch
+torchvision
+numpy
+matplotlib
+pandas
+scikit-learn
+psutil
+Pillow
+streamlit
+scikit-fuzzy
+tqdm
+opencv-python-headless
+packaging
