@@ -1,12 +1,8 @@
-# utils.py
-
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
 import cv2
 import numpy as np
-import skfuzzy as fuzz
-from sklearn.cluster import DBSCAN
 from PIL import Image
 
 # Định nghĩa class để map index sang tên class
@@ -52,7 +48,9 @@ def get_transforms():
     return train_transform, test_val_transform
 
 def predict_image(model, image_pil):
-
+    """
+    Dự đoán lớp của một ảnh PIL.
+    """
     _, test_transform = get_transforms()
     image_tensor = test_transform(image_pil).unsqueeze(0).to(device)
 
