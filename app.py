@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- TẢI MODEL  ---
+# --- TẢI MODEL ---
 @st.cache_resource
 def load_trained_model(model_path):
     """
@@ -27,7 +27,7 @@ def load_trained_model(model_path):
 st.title("Ứng dụng phát hiện lỗi trên vật đúc kim loại 🔩")
 st.write(
     "Chào mừng bạn đến với ứng dụng demo! "
-    "Hãy tải lên một ảnh của vật đúc để kiểm tra xem nó có bị lỗi ('def_front') hay không ('ok_front'). "
+    "Hãy tải lên một hoặc nhiều ảnh của vật đúc để kiểm tra xem chúng có bị lỗi ('def_front') hay không ('ok_front'). "
     "Nếu có lỗi, hệ thống sẽ thử khoanh vùng vị trí của lỗi đó."
 )
 st.markdown("---")
@@ -47,50 +47,59 @@ else:
     
     # --- Sidebar để upload ảnh ---
     st.sidebar.header("Tải ảnh lên")
-    uploaded_file = st.sidebar.file_uploader(
-        "Chọn một ảnh vật đúc...", type=["jpg", "jpeg", "png"]
+    # Thay đổi: Cho phép tải lên nhiều file cùng lúc
+    uploaded_files = st.sidebar.file_uploader(
+        "Chọn một hoặc nhiều ảnh vật đúc...", 
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True
     )
 
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert("RGB")
-
-        st.sidebar.image(image, caption="Ảnh bạn đã tải lên", use_container_width=True)
+    # Thay đổi: Xử lý danh sách các file đã tải lên
+    if uploaded_files:
+        st.sidebar.info(f"Đã tải lên {len(uploaded_files)} ảnh.")
         st.sidebar.markdown("---")
 
         if st.sidebar.button("Bắt đầu phân tích"):
-            with st.spinner("🧠 Mô hình đang phân tích, vui lòng chờ..."):
-                col1, col2 = st.columns(2)
+            # Lặp qua từng file ảnh để xử lý
+            for uploaded_file in uploaded_files:
+                image = Image.open(uploaded_file).convert("RGB")
 
-                with col1:
-                    st.subheader("🖼️ Ảnh gốc")
-                    st.image(image, use_container_width=True)
-
-                class_name, confidence = predict_image(model, image)
+                st.markdown(f"---")
+                st.header(f"Kết quả cho ảnh: {uploaded_file.name}")
                 
-                with col2:
-                    st.subheader("🎯 Kết quả phân loại")
-                    
-                    if class_name == 'ok_front':
-                        st.success(f"✅ Kết quả: OK (Không có lỗi)")
-                    else:
-                        st.error(f"❌ Kết quả: CÓ LỖI (Defect)")
-                    
-                    st.metric(label="Độ tin cậy", value=f"{confidence * 100:.2f}%")
-                    st.write("---")
-                    
-                    if class_name == 'def_front':
-                        st.subheader("🗺️ Phân tích chi tiết vùng lỗi")
-                        segmented_image, defect_types, defect_count = analyze_and_draw_defects(image)
-                        st.image(segmented_image, caption="Các vùng lỗi đã được đánh dấu.", use_container_width=True)
-                        st.markdown("---")
-                        st.subheader("📝 Chi tiết các loại lỗi")
+                with st.spinner("🧠 Mô hình đang phân tích, vui lòng chờ..."):
+                    col1, col2 = st.columns(2)
 
-                        if defect_count > 0:
-                            st.write(f"**Tổng số vùng lỗi phát hiện:** {defect_count}")
-                            st.write("**Phân loại chi tiết:**")
-                            for i, dtype in enumerate(defect_types, 1):
-                                st.markdown(f"- Vùng lỗi {i}: **{dtype}**")
+                    with col1:
+                        st.subheader("🖼️ Ảnh gốc")
+                        st.image(image, use_container_width=True)
+
+                    class_name, confidence = predict_image(model, image)
+                    
+                    with col2:
+                        st.subheader("🎯 Kết quả phân loại")
+                        
+                        if class_name == 'ok_front':
+                            st.success(f"✅ Kết quả: OK (Không có lỗi)")
                         else:
-                            st.info("Mô hình phát hiện có khả năng bị lỗi, nhưng không tìm thấy vùng lỗi rõ ràng bằng phân tích hình ảnh.")
+                            st.error(f"❌ Kết quả: CÓ LỖI (Defect)")
+                        
+                        st.metric(label="Độ tin cậy", value=f"{confidence * 100:.2f}%")
+                        st.write("---")
+                        
+                        if class_name == 'def_front':
+                            st.subheader("🗺️ Phân tích chi tiết vùng lỗi")
+                            segmented_image, defect_types, defect_count = analyze_and_draw_defects(image)
+                            st.image(segmented_image, caption="Các vùng lỗi đã được đánh dấu.", use_container_width=True)
+                            st.markdown("---")
+                            st.subheader("📝 Chi tiết các loại lỗi")
+
+                            if defect_count > 0:
+                                st.write(f"**Tổng số vùng lỗi phát hiện:** {defect_count}")
+                                st.write("**Phân loại chi tiết:**")
+                                for i, dtype in enumerate(defect_types, 1):
+                                    st.markdown(f"- Vùng lỗi {i}: **{dtype}**")
+                            else:
+                                st.info("Mô hình phát hiện có khả năng bị lỗi, nhưng không tìm thấy vùng lỗi rõ ràng bằng phân tích hình ảnh.")
     else:
         st.info("Vui lòng tải ảnh lên từ thanh công cụ bên trái để bắt đầu.")
