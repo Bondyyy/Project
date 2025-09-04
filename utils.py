@@ -52,9 +52,7 @@ def get_transforms():
     return train_transform, test_val_transform
 
 def predict_image(model, image_pil):
-    """
-    Dự đoán lớp của một ảnh PIL.
-    """
+
     _, test_transform = get_transforms()
     image_tensor = test_transform(image_pil).unsqueeze(0).to(device)
 
@@ -76,7 +74,7 @@ def analyze_and_draw_defects(image_pil):
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
 
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-   
+    
     _, binary = cv2.threshold(gray_img, 100, 255, cv2.THRESH_BINARY_INV)
 
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -86,7 +84,7 @@ def analyze_and_draw_defects(image_pil):
 
     defect_types = []
     filtered_contours = []
-  
+ 
     for contour in contours:
         
         area = cv2.contourArea(contour)
@@ -96,27 +94,27 @@ def analyze_and_draw_defects(image_pil):
         filtered_contours.append(contour)
         perimeter = cv2.arcLength(contour, True)
         
-       
+        
         circularity = 4 * np.pi * area / (perimeter ** 2) if perimeter > 0 else 0
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = float(w) / h if h > 0 else 0
         
         if circularity > 0.7 and area < 2000:
-            defect_type = "Lo khi"
+            defect_type = "Lỗ khí"
         elif aspect_ratio > 3 and circularity < 0.3:
-            defect_type = "Xuoc"
+            defect_type = "Xước"
         elif aspect_ratio > 2 and circularity < 0.5:
-            defect_type = "Nut"
+            defect_type = "Nứt"
         elif area > 5000 and circularity < 0.6:
-            defect_type = "Me"
+            defect_type = "Mẻ"
         else:
-            defect_type = "Loi khac"
+            defect_type = "Lỗi khác"
             
         defect_types.append(defect_type)
 
     img_with_labels = original_img.copy()
     for i, contour in enumerate(filtered_contours):
-       
+        
         cv2.drawContours(img_with_labels, [contour], -1, (0, 0, 255), 2)
 
         M = cv2.moments(contour)
@@ -124,8 +122,9 @@ def analyze_and_draw_defects(image_pil):
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
             label = defect_types[i]
-            cv2.putText(img_with_labels, label, (cx - 20, cy - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
+            # Removed/commented out the line that adds text to the image
+            # cv2.putText(img_with_labels, label, (cx - 20, cy - 10), 
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
 
     final_image_pil = Image.fromarray(cv2.cvtColor(img_with_labels, cv2.COLOR_BGR2RGB))
     
