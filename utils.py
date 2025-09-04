@@ -67,7 +67,7 @@ def predict_image(model, image_pil):
 
 def analyze_and_draw_defects(image_pil):
     """
-    Phân tích và vẽ đường bao quanh lỗi mà không hiển thị chữ.
+    Phân tích và vẽ đường bao quanh lỗi
     """
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
@@ -107,7 +107,6 @@ def analyze_and_draw_defects(image_pil):
         defect_types.append(defect_type)
 
     img_with_contours = original_img.copy()
-    # Chỉ vẽ đường bao (contour)
     for contour in filtered_contours:
         cv2.drawContours(img_with_contours, [contour], -1, (0, 0, 255), 2)
 
