@@ -16,7 +16,6 @@ st.set_page_config(
 def load_trained_model(model_path):
     """
     Tải model đã được huấn luyện.
-    Hàm này được cache để không phải load lại model mỗi khi có tương tác.
     """
     model = get_model()
     # Load state_dict với map_location để đảm bảo chạy được trên cả CPU và GPU
