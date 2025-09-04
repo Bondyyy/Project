@@ -68,11 +68,11 @@ def predict_image(model, image_pil):
     return class_name, confidence.item()
 
 def analyze_and_draw_defects(image_pil):
-
-    original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB_BGR)
+    # TOÀN BỘ CODE DƯỚI ĐÂY ĐÃ ĐƯỢC THỤT LỀ VÀO TRONG HÀM NÀY
+    original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
 
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-
+    
     _, binary = cv2.threshold(gray_img, 100, 255, cv2.THRESH_BINARY_INV)
 
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -82,20 +82,20 @@ def analyze_and_draw_defects(image_pil):
 
     defect_types = []
     filtered_contours = []
-
+ 
     for contour in contours:
-
+        
         area = cv2.contourArea(contour)
         if area < 100:
             continue
-
+        
         filtered_contours.append(contour)
         perimeter = cv2.arcLength(contour, True)
-
+        
         circularity = 4 * np.pi * area / (perimeter ** 2) if perimeter > 0 else 0
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = float(w) / h if h > 0 else 0
-
+        
         if circularity > 0.7 and area < 2000:
             defect_type = "Lỗ khí"
         elif aspect_ratio > 3 and circularity < 0.3:
@@ -106,14 +106,13 @@ def analyze_and_draw_defects(image_pil):
             defect_type = "Mẻ"
         else:
             defect_type = "Lỗi khác"
-
+            
         defect_types.append(defect_type)
 
     img_with_contours = original_img.copy()
-    # Vòng lặp này chỉ vẽ đường bao, không vẽ chữ
     for contour in filtered_contours:
         cv2.drawContours(img_with_contours, [contour], -1, (0, 0, 255), 2)
 
     final_image_pil = Image.fromarray(cv2.cvtColor(img_with_contours, cv2.COLOR_BGR2RGB))
-
+    
     return final_image_pil, defect_types, len(defect_types)
