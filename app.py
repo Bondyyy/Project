@@ -60,7 +60,7 @@ else:
         # Đọc ảnh từ file upload
         image = Image.open(uploaded_file).convert("RGB")
 
-        st.sidebar.image(image, caption="Ảnh bạn đã tải lên", use_column_width=True)
+        st.sidebar.image(image, caption="Ảnh bạn đã tải lên", use_container_width=True)
         st.sidebar.markdown("---")
 
         if st.sidebar.button("Bắt đầu phân tích"):
@@ -90,7 +90,7 @@ else:
                     if class_name == 'def_front':
                         st.subheader("🗺️ Phân đoạn vùng lỗi")
                         segmented_image = segment_defect(image)
-                        st.image(segmented_image, caption="Vùng lỗi được đánh dấu màu đỏ", use_column_width=True)
+                        st.image(segmented_image, caption="Vùng lỗi được đánh dấu màu đỏ", use_container_width=True)
                         
     else:
         st.info("Vui lòng tải ảnh lên từ thanh công cụ bên trái để bắt đầu.")
