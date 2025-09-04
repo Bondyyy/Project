@@ -70,6 +70,10 @@ def predict_image(model, image_pil):
     return class_name, confidence.item()
 
 def segment_defect(image_pil):
+<<<<<<< HEAD
+=======
+    # 1. Chuyển đổi PIL Image sang định dạng OpenCV (BGR)
+>>>>>>> b54fd1c (add analyze_and_draw_defects)
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     blurred_img = cv2.GaussianBlur(gray_img, (7, 7), 0)
