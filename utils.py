@@ -71,52 +71,31 @@ def predict_image(model, image_pil):
 
 def segment_defect(image_pil):
     """
-    Phân đoạn vùng lỗi trên ảnh bằng DBSCAN và Fuzzy C-Means.
+    Phân đoạn vùng lỗi trên ảnh bằng phương pháp phân ngưỡng và tìm đường viền.
+    Đây là cách tiếp cận hiệu quả hơn cho việc tìm các vết nứt, xước.
     """
-    # Chuyển đổi PIL Image sang OpenCV format (BGR)
-    img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
-    img_resized = cv2.resize(img, (128, 128))
-
-    pixels = img_resized.reshape((-1, 3))
-    pixels_norm = pixels / 255.0
-
-    # DBSCAN để tìm outlier (lỗi)
-    dbscan = DBSCAN(eps=0.05, min_samples=5)
-    db_labels = dbscan.fit_predict(pixels_norm)
-    outlier_mask = (db_labels == -1)
-
-    # Fuzzy C-Means cho các pixel không lỗi
-    pixels_in = pixels_norm[~outlier_mask].T
-    if pixels_in.shape[1] < 2:  # Không đủ điểm để phân cụm
-        # Nếu gần như toàn bộ là outlier, coi toàn bộ là lỗi
-        segmented_img = np.full(img_resized.shape, (255, 0, 0), dtype=np.uint8)
-        return Image.fromarray(cv2.cvtColor(segmented_img, cv2.COLOR_BGR2RGB))
-
-    n_clusters = 2
-    cntr, u, _, _, _, _, _ = fuzz.cluster.cmeans(
-        pixels_in, n_clusters, 2, error=0.005, maxiter=1000, init=None
-    )
+    # Chuyển đổi PIL Image sang OpenCV format (BGR) và giữ nguyên kích thước gốc
+    original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
     
-    labels_soft = np.zeros(len(pixels))
-    labels_soft[~outlier_mask] = np.argmax(u, axis=0)
-    labels_soft[outlier_mask] = n_clusters # Outlier là cụm riêng
-
-    # Tạo ảnh segmentation
-    segmented_img = np.zeros_like(pixels)
-    unique_labels = np.unique(labels_soft)
+    # 1. Chuyển sang ảnh xám để tập trung vào cường độ sáng
+    gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     
-    np.random.seed(42)
-    colors = np.random.randint(0, 255, size=(len(unique_labels), 3))
-
-# Nếu có outlier thì tô đỏ
-    if n_clusters in unique_labels:
-        idx_outlier = np.where(unique_labels == n_clusters)[0][0]
-        colors[idx_outlier] = [255, 0, 0]
-
-    for i, lbl in enumerate(unique_labels):
-        segmented_img[labels_soft == lbl] = colors[i]
-
-    segmented_img = segmented_img.reshape(img_resized.shape)
+    # 2. Làm mờ ảnh để giảm nhiễu và làm nổi bật các vùng lớn
+    blurred_img = cv2.GaussianBlur(gray_img, (7, 7), 0)
     
-    # Chuyển đổi lại sang PIL Image (RGB) để hiển thị
+    # 3. Áp dụng phân ngưỡng Otsu để tạo ảnh nhị phân (đen-trắng)
+    # THRESH_BINARY_INV: Vùng tối (lỗi) sẽ trở thành màu trắng, nền sáng thành màu đen.
+    # Otsu tự động tìm giá trị ngưỡng tối ưu.
+    _, thresh = cv2.threshold(blurred_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    # 4. Tìm các đường viền (contours) của các vùng trắng (vùng nghi ngờ là lỗi)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # 5. Vẽ các đường viền tìm được lên ảnh gốc
+    # Tạo một bản sao của ảnh gốc để vẽ lên
+    segmented_img = original_img.copy() 
+    # Vẽ các đường viền màu đỏ với độ dày là 2
+    cv2.drawContours(segmented_img, contours, -1, (0, 0, 255), 2) # (0, 0, 255) là màu đỏ trong BGR
+
+    # Chuyển đổi lại sang PIL Image (RGB) để Streamlit hiển thị
     return Image.fromarray(cv2.cvtColor(segmented_img, cv2.COLOR_BGR2RGB))
