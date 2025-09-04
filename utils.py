@@ -70,32 +70,55 @@ def predict_image(model, image_pil):
     return class_name, confidence.item()
 
 def segment_defect(image_pil):
-    """
-    Phân đoạn vùng lỗi trên ảnh bằng phương pháp phân ngưỡng và tìm đường viền.
-    Đây là cách tiếp cận hiệu quả hơn cho việc tìm các vết nứt, xước.
-    """
-    # Chuyển đổi PIL Image sang OpenCV format (BGR) và giữ nguyên kích thước gốc
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
-    
-    # 1. Chuyển sang ảnh xám để tập trung vào cường độ sáng
-    gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-    
-    # 2. Làm mờ ảnh để giảm nhiễu và làm nổi bật các vùng lớn
-    blurred_img = cv2.GaussianBlur(gray_img, (7, 7), 0)
-    
-    # 3. Áp dụng phân ngưỡng Otsu để tạo ảnh nhị phân (đen-trắng)
-    # THRESH_BINARY_INV: Vùng tối (lỗi) sẽ trở thành màu trắng, nền sáng thành màu đen.
-    # Otsu tự động tìm giá trị ngưỡng tối ưu.
-    _, thresh = cv2.threshold(blurred_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    h, w = original_img.shape[:2]
 
-    # 4. Tìm các đường viền (contours) của các vùng trắng (vùng nghi ngờ là lỗi)
+    # 1. Gray + blur
+    gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (7,7), 0)
+
+    # 2. Threshold (THRESH_BINARY) với Otsu
+    _, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # 3. Morphological: đóng để kết nối vùng, mở để loại nhiễu nhỏ
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    # 4. Tìm contours trên mask
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # 5. Vẽ các đường viền tìm được lên ảnh gốc
-    # Tạo một bản sao của ảnh gốc để vẽ lên
-    segmented_img = original_img.copy() 
-    # Vẽ các đường viền màu đỏ với độ dày là 2
-    cv2.drawContours(segmented_img, contours, -1, (0, 0, 255), 2) # (0, 0, 255) là màu đỏ trong BGR
+    mask = np.zeros((h,w), dtype=np.uint8)
+    if len(contours) == 0:
+        # fallback: dùng Canny nếu Otsu không tìm được gì
+        edges = cv2.Canny(blur, 50, 150)
+        edges = cv2.dilate(edges, kernel, iterations=2)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Chuyển đổi lại sang PIL Image (RGB) để Streamlit hiển thị
-    return Image.fromarray(cv2.cvtColor(segmented_img, cv2.COLOR_BGR2RGB))
+    # Vẽ các contour lên mask (fill)
+    cv2.drawContours(mask, contours, -1, 255, thickness=cv2.FILLED)
+
+    # Optionally: lọc theo diện tích nhỏ -> loại bỏ các noise nhỏ
+    min_area = 100  # điều chỉnh tuỳ kích thước ảnh
+    large_mask = np.zeros_like(mask)
+    for cnt in contours:
+        if cv2.contourArea(cnt) >= min_area:
+            cv2.drawContours(large_mask, [cnt], -1, 255, thickness=cv2.FILLED)
+
+    mask = large_mask
+
+    # 5. Tạo overlay đỏ bán trong suốt trên ảnh gốc
+    red_overlay = np.zeros_like(original_img)
+    red_overlay[:, :] = (0, 0, 255)  # BGR red
+    mask_3ch = cv2.merge([mask, mask, mask]) // 255  # 0 or 1
+
+    # alpha blending: chỉ overlay nơi mask==1
+    alpha = 0.5
+    overlayed = original_img.copy()
+    overlayed = np.where(mask_3ch==1, (original_img * (1-alpha) + red_overlay * alpha).astype(np.uint8), original_img)
+
+    # Nếu muốn vẽ viền đỏ đậm nữa
+    cv2.drawContours(overlayed, contours, -1, (0,0,255), thickness=2)
+
+    # Trả về PIL RGB
+    return Image.fromarray(cv2.cvtColor(overlayed, cv2.COLOR_BGR2RGB))
