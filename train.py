@@ -14,7 +14,7 @@ import pandas as pd
 
 # Import các hàm từ utils.py
 from utils import get_model, get_transforms, device
-
+ 
 # --- CÁC THAM SỐ CẤU HÌNH ---
 DATA_DIR = "data/data_casting_Khoa"
 SAVE_DIR = "saved_models"

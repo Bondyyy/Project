@@ -66,11 +66,11 @@ def predict_image(model, image_pil):
     return class_name, confidence.item()
 
 def analyze_and_draw_defects(image_pil):
-    # TOÀN BỘ CODE DƯỚI ĐÂY ĐÃ ĐƯỢC THỤT LỀ VÀO TRONG HÀM NÀY
+    """
+    Phân tích và vẽ đường bao quanh lỗi mà không hiển thị chữ.
+    """
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
-
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-    
     _, binary = cv2.threshold(gray_img, 100, 255, cv2.THRESH_BINARY_INV)
 
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -82,7 +82,6 @@ def analyze_and_draw_defects(image_pil):
     filtered_contours = []
  
     for contour in contours:
-        
         area = cv2.contourArea(contour)
         if area < 100:
             continue
@@ -108,6 +107,7 @@ def analyze_and_draw_defects(image_pil):
         defect_types.append(defect_type)
 
     img_with_contours = original_img.copy()
+    # Chỉ vẽ đường bao (contour)
     for contour in filtered_contours:
         cv2.drawContours(img_with_contours, [contour], -1, (0, 0, 255), 2)
 

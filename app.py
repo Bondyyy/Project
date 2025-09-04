@@ -1,11 +1,8 @@
-# app.py
-
 import streamlit as st
 from PIL import Image
 import torch
 import os
-
-from utils import get_model, predict_image, analyze_and_draw_defects, device 
+from utils import get_model, predict_image, analyze_and_draw_defects, device
 
 # --- CẤU HÌNH TRANG WEB ---
 st.set_page_config(
@@ -14,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- TẢI MODEL (CACHE ĐỂ TĂNG TỐC) ---
+# --- TẢI MODEL  ---
 @st.cache_resource
 def load_trained_model(model_path):
     """
@@ -56,7 +53,6 @@ else:
     )
 
     if uploaded_file is not None:
-        
         image = Image.open(uploaded_file).convert("RGB")
 
         st.sidebar.image(image, caption="Ảnh bạn đã tải lên", use_container_width=True)
@@ -64,7 +60,6 @@ else:
 
         if st.sidebar.button("Bắt đầu phân tích"):
             with st.spinner("🧠 Mô hình đang phân tích, vui lòng chờ..."):
-               
                 col1, col2 = st.columns(2)
 
                 with col1:
@@ -87,7 +82,7 @@ else:
                     if class_name == 'def_front':
                         st.subheader("🗺️ Phân tích chi tiết vùng lỗi")
                         segmented_image, defect_types, defect_count = analyze_and_draw_defects(image)
-                        st.image(segmented_image, caption="Các vùng lỗi và loại lỗi đã được đánh dấu.", use_container_width=True)
+                        st.image(segmented_image, caption="Các vùng lỗi đã được đánh dấu (không có chữ).", use_container_width=True)
                         st.markdown("---")
                         st.subheader("📝 Chi tiết các loại lỗi")
 
@@ -97,6 +92,6 @@ else:
                             for i, dtype in enumerate(defect_types, 1):
                                 st.markdown(f"- Vùng lỗi {i}: **{dtype}**")
                         else:
-                            st.info("Mô hình phát hiện có khả năng bị lỗi, nhưng không tìm thấy vùng lỗi rõ ràng bằng phân tích hình ảnh.")                   
+                            st.info("Mô hình phát hiện có khả năng bị lỗi, nhưng không tìm thấy vùng lỗi rõ ràng bằng phân tích hình ảnh.")
     else:
         st.info("Vui lòng tải ảnh lên từ thanh công cụ bên trái để bắt đầu.")
