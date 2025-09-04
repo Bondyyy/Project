@@ -102,15 +102,15 @@ def analyze_and_draw_defects(image_pil):
         aspect_ratio = float(w) / h if h > 0 else 0
         
         if circularity > 0.7 and area < 2000:
-            defect_type = "Lỗ khí"
+            defect_type = "Lo khi"
         elif aspect_ratio > 3 and circularity < 0.3:
-            defect_type = "Xước"
+            defect_type = "Xuoc"
         elif aspect_ratio > 2 and circularity < 0.5:
-            defect_type = "Nứt"
+            defect_type = "Nut"
         elif area > 5000 and circularity < 0.6:
-            defect_type = "Mẻ"
+            defect_type = "Me"
         else:
-            defect_type = "Lỗi khác"
+            defect_type = "Loi khac"
             
         defect_types.append(defect_type)
 
