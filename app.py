@@ -81,7 +81,7 @@ else:
                     if class_name == 'def_front':
                         st.subheader("🗺️ Phân tích chi tiết vùng lỗi")
                         segmented_image, defect_types, defect_count = analyze_and_draw_defects(image)
-                        st.image(segmented_image, caption="Các vùng lỗi đã được đánh dấu (không có chữ).", use_container_width=True)
+                        st.image(segmented_image, caption="Các vùng lỗi đã được đánh dấu.", use_container_width=True)
                         st.markdown("---")
                         st.subheader("📝 Chi tiết các loại lỗi")
 
