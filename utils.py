@@ -70,31 +70,11 @@ def predict_image(model, image_pil):
     return class_name, confidence.item()
 
 def segment_defect(image_pil):
-    """
-    Phân đoạn vùng lỗi trên ảnh bằng phương pháp phân ngưỡng và tìm đường viền.
-    Đây là cách tiếp cận hiệu quả hơn cho việc tìm các vết nứt, xước.
-    """
-    # 1. Chuyển đổi PIL Image sang định dạng OpenCV (BGR)
     original_img = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
-    
-    # 2. Chuyển sang ảnh xám để tập trung vào cường độ sáng
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-    
-    # 3. Làm mờ ảnh để giảm nhiễu, giúp việc phân ngưỡng chính xác hơn
     blurred_img = cv2.GaussianBlur(gray_img, (7, 7), 0)
-    
-    # 4. Áp dụng phân ngưỡng Otsu để tạo ảnh nhị phân (đen-trắng)
-    #    - THRESH_BINARY_INV: Vùng tối (lỗi) sẽ trở thành màu trắng, nền sáng thành màu đen.
-    #    - Otsu tự động tìm giá trị ngưỡng tối ưu.
     _, thresh = cv2.threshold(blurred_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-    # 5. Tìm các đường viền (contours) của các vùng trắng (vùng nghi ngờ là lỗi)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 6. Vẽ các đường viền tìm được lên ảnh gốc
-    segmented_img = original_img.copy() # Tạo bản sao để không làm thay đổi ảnh gốc
-    # Vẽ các đường viền màu đỏ với độ dày là 2
-    cv2.drawContours(segmented_img, contours, -1, (0, 0, 255), 2) # (0, 0, 255) là màu đỏ trong BGR
-
-    # 7. Chuyển đổi lại sang định dạng PIL Image (RGB) để Streamlit hiển thị
+    segmented_img = original_img.copy() 
+    cv2.drawContours(segmented_img, contours, -1, (0, 0, 255), 2)
     return Image.fromarray(cv2.cvtColor(segmented_img, cv2.COLOR_BGR2RGB))
