@@ -107,7 +107,11 @@ def segment_defect(image_pil):
     
     np.random.seed(42)
     colors = np.random.randint(0, 255, size=(len(unique_labels), 3))
-    colors[n_clusters] = [255, 0, 0] # Màu đỏ cho vùng lỗi chính
+
+# Nếu có outlier thì tô đỏ
+    if n_clusters in unique_labels:
+        idx_outlier = np.where(unique_labels == n_clusters)[0][0]
+        colors[idx_outlier] = [255, 0, 0]
 
     for i, lbl in enumerate(unique_labels):
         segmented_img[labels_soft == lbl] = colors[i]

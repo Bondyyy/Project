@@ -70,7 +70,7 @@ else:
 
                 with col1:
                     st.subheader("🖼️ Ảnh gốc")
-                    st.image(image, use_column_width=True)
+                    st.image(image, use_container_width=True)
 
                 # Dự đoán bằng model
                 class_name, confidence = predict_image(model, image)
